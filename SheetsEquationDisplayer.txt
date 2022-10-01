@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+</head>
+
+<script>
+ function displayToast() {
+   var name = document.getElementById('equation').value;
+   var slot = document.getElementById('slot').value;
+   google.script.run.displayToast(slot,name);
+   displayInfo();
+ }
+function onSuccess(items) {
+    document.getElementById('demo').innerHTML = items;
+  }
+function displayInfo(){
+  google.script.run.withSuccessHandler(onSuccess).items();
+}
+ function removeAllItems(){
+   google.script.run.withSuccessHandler(onSuccess).removeAllItems();
+   displayInfo();
+ }
+ function removeItem(){
+   var id = document.getElementById('removalID').value;
+   google.script.run.withSuccessHandler(onSuccess).removeItem(id);
+   displayInfo();
+ }
+</script>
+
+<body>
+  <script>displayInfo()</script>
+  Please enter Equation ID as a positive whole integer.(1,2,3,...).
+    <p>Equation ID
+      <input type="text" id="slot">
+    </p>
+
+  From left to right or Top down, enter the boxes you would like to represent as variables as (A,B,C,...). It is case sensitive, but letters do not have to be in alphabetiacal order(X,C,V,...)
+    <p>Equation
+      <br>
+        <input type="text" id="equation">
+      <br>
+    </p>
+
+<input type="button" class="button" value="Create or Update equation" onclick="displayToast();">
+
+  <p>
+    Enter ID of equation you want to remove in this box. Hit the button when finished.
+    <input type="text" id="removalID">
+    <input type="button" class="button" value="Remove selected Equation" onclick="removeItem();">
+  </p>
+
+  <p>Press to remove ALL preset equations 
+  <input type="button" class="button" value="Remove ALL Equations" onclick="removeAllItems();">
+  </p>
+
+  <p>Press to display equations 
+  <input type="button" class="button" value="Display equations" onclick="displayInfo();">
+  </p>
+  <!--<script type = "text/javascript" src="Code.gs"></script>--> 
+  <p id="demo"></p>
+ 
+</body>
+</html>

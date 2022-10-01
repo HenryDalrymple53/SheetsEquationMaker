@@ -1,0 +1,296 @@
+const alpha = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V',
+               'V','W','X','Y','Z'];
+const banChar = ['+','-','/','*','^',' ','(',')']
+const trigLetters = ["sin","cos","tan", "ln", "sec", "csc", "cot"]
+var equationArr = [];
+const scriptProperties = PropertiesService.getUserProperties();
+
+var constant = 10;
+function onOpen() {
+ SpreadsheetApp
+   .getUi()
+   .createMenu("CustomFunctions")
+   .addItem("Adjust Custom Functions", "showAdminSidebar")
+   .addToUi();
+}
+
+
+function showAdminSidebar() {
+ var widget = HtmlService.createHtmlOutputFromFile("AdminPage.html");
+ widget.setTitle("Adjust Custom Functions");
+ SpreadsheetApp.getUi().showSidebar(widget);
+}
+
+
+
+ function displayToast(slot,equation) {
+
+  //name = ''+name;
+
+  //var scriptProperties = PropertiesService.getScriptProperties();
+  var oldEquation = scriptProperties.getProperty(slot);
+  scriptProperties.setProperty(slot, equation);
+  var newEquation = scriptProperties.getProperty(slot);
+  if(newEquation === ''){
+    newEquation = oldEquation;
+  }
+ // scriptProperties.setProperty("str", )
+  /*var letters = new Map();
+  var equationArr = Array.from(equation);
+  for(var i = 0; i < equationArr.length; i++){
+    var char = equationArr[i];
+
+  }
+*/
+  //SpreadsheetApp.getActive().toast("Old Equation: " + oldEquation + " New //Equation: " + newEquation);
+  //SpreadsheetApp.flush();
+  
+}
+function displayInfo(name){
+   return name;
+}
+
+
+
+function precedence(c){
+  switch (c){
+     case '+':
+     case '-':
+     
+     return 1;
+
+     case '*':
+     case '/':
+     return 2;
+
+     case '^':
+     case "sin":
+     case "cos":
+     case "tan":
+     case "ln":
+     case "sec":
+     case "csc":
+     case "cot":
+     return 3;
+
+        }
+        return -1;
+    }
+function operator(num1,num2,op){
+  switch(op){
+    case '+':
+    return parseFloat(num1)+parseFloat(num2);
+
+    case '-':
+    return num1-num2;
+
+    case '*':
+    return num1*num2;
+
+    case '/':
+    return num1/num2;
+
+    case '^':
+    return Math.pow(num1,num2);
+
+  }
+  return -1;
+}
+
+
+function trigOperators(num,func){
+  switch(func){
+    case "sin":
+    return Math.sin(num);
+    
+    case "cos":
+    return Math.cos(num);
+
+    case "tan":
+    return Math.tan(num);
+
+    case "ln":
+    return Math.log(num);
+    
+    case "sec":
+    return Math.acos(num);
+
+    case "csc":
+    return Math.asin(num);
+
+    case "cot":
+    return Math.atan(num);
+  }
+}
+
+
+//Method that is ran inside of sheet, takes array from cells and ID number to indicate which equation to use
+function CUSTOMFUNCTION(input, id){
+  //var scriptProperties = PropertiesService.getScriptProperties();
+  var equation = scriptProperties.getProperty(id);
+  
+
+  for(var i = 0; i < input[0].length;i++){
+    scriptProperties.setProperty(alpha[i],input[0][i]);
+  }
+ //var  newResult = equationSolver(subbedEquation,parStart,parEnd,power)
+ return PRN(equation);
+  
+}
+//Function is used to split sections of an equation by () in order to do calculations.
+
+//Function takes all the different equations created by () and combines their totals
+//with +, -, /, *, ^,
+//always one less operator than Nums, maybe clue? Maybe start with nums associated with decending operators
+//with precidence? 
+function PRN(str){
+  var n = 0;
+  var trigLength=0;
+  var num = "";
+  var trigFunc = "";
+  var opStack = new Array();
+  var result = new Array();
+  var eqArray = str.split("");
+  var k = 0;
+  for(var i = 0; i<eqArray.length;i++){
+    char = eqArray[i];
+    if(trigLength == 3){
+      
+      opStack.push(trigFunc);
+      k++;
+      trigFunc = "";
+      trigLength = 0;
+    }
+    if(banChar.includes(eqArray[i-1])&& char==='-'){
+      num+=char;
+      
+    } 
+    else if(char==='.'){
+      num+=char;
+    }
+    else if(precedence(char)>0){
+      
+      result[k]=num;
+      k++
+      num="";
+      var peek = opStack.pop();
+      opStack.push(peek)
+      
+      while(opStack.length!==0 && precedence(peek)>=precedence(char)){
+       
+        n++;
+        var x = opStack.pop();
+         //return "Death";
+        result[k]=x;
+        k++;
+         peek = opStack.pop();
+        opStack.push(peek)
+      }
+      
+      opStack.push(char);
+
+    } else if(char=='('){
+
+        opStack.push(char);
+
+    } else if(char==')'){
+      result[k] = num;
+      k++;
+      num="";
+      var x = opStack.pop();
+    
+        while(x!=='('){
+          
+          result[k]=x;
+          k++;
+          x = opStack.pop();
+
+        }
+      
+    } else if(isNaN(char) && char==char.toUpperCase()){
+      
+      result[k]= char;
+      k++
+      trigLength=0;
+    } else if(alpha.includes(char.toUpperCase())){
+      trigFunc+= char;
+      trigLength++;
+    } 
+    else {
+      num += char;
+    }
+    if(eqArray.length-1==i){
+      
+      result[k]=num;
+      k++;
+    }
+  }
+  
+  for(var x = 0; x <= opStack.length+1;x++){
+    var d = opStack.pop();
+    result[k]=d;
+    k++
+  }
+  result =  result.filter(e =>  e);
+  return variableSubstitution(result);
+  //return result;
+  
+}
+
+
+
+function variableSubstitution(result){
+var numStack = new Array();
+for(var i = 0; i < result.length; i++){
+  var char = result[i];
+  
+  if(banChar.includes(char) ){
+    var num2 = parseFloat(numStack.pop());
+    var num1 = parseFloat(numStack.pop());
+    numStack.push(operator(num1,num2,char));
+  } 
+  else if(trigLetters.includes(char)){
+    var num1 = numStack.pop();
+    numStack.push(trigOperators(num1,char))
+  }
+  else if(isNaN(char)){
+    numStack.push(scriptProperties.getProperty(char));
+  }
+  else{
+    numStack.push(parseFloat(char));
+  }
+}
+return numStack;
+}
+
+function doGet() {
+    return HtmlService.createHtmlOutputFromFile('AdminPage');
+}
+
+function items() {
+     // Added to allow time to see the div content change
+     var s = "";
+     var keys = scriptProperties.getProperties()
+     
+     for(var i in keys){
+       if(isNaN(i)){
+         s +="";
+       } else {
+         s+= "<div>ID:" + i + " || Equation:";
+       s+=keys[i];
+       s+= "</div>";
+       
+       }
+       
+     }
+     
+ return(s);
+    
+
+}
+function removeAllItems(){
+  scriptProperties.deleteAllProperties();
+}
+function removeItem(item){
+  scriptProperties.deleteProperty(item);
+}
